@@ -76,6 +76,7 @@ class BlockSelectionContainer extends StatelessWidget {
       delegate: delegate,
       listenable: highlight,
       highlightColor: highlightColor,
+      cursorColor: cursorColor,
       blockColor: blockColor,
       supportTypes: supportTypes
           .where((element) => element != BlockSelectionType.cursor)

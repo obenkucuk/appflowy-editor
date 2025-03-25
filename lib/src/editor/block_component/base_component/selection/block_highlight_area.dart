@@ -1,4 +1,8 @@
+import 'dart:developer';
+
 import 'package:appflowy_editor/appflowy_editor.dart' hide Path;
+import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
+import 'package:appflowy_editor/src/render/selection/cursor.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,9 +17,11 @@ class BlockHighlightArea extends StatefulWidget {
     required this.node,
     required this.delegate,
     required this.listenable,
+    required this.cursorColor,
     required this.highlightColor,
     required this.blockColor,
     this.supportTypes = const [
+      BlockSelectionType.cursor,
       BlockSelectionType.selection,
     ],
   });
@@ -27,6 +33,7 @@ class BlockHighlightArea extends StatefulWidget {
   final ValueListenable<Selection?> listenable;
 
   // the color of the cursor
+  final Color cursorColor;
 
   // the color of the selection
   final Color highlightColor;
@@ -39,13 +46,14 @@ class BlockHighlightArea extends StatefulWidget {
   final List<BlockSelectionType> supportTypes;
 
   @override
-  State<BlockHighlightArea> createState() => _BlockHighlightAreaState();
+  State<BlockHighlightArea> createState() => _BlockSelectionAreaState();
 }
 
-class _BlockHighlightAreaState extends State<BlockHighlightArea> {
+class _BlockSelectionAreaState extends State<BlockHighlightArea> {
   // We need to keep the key to refresh the cursor status when typing continuously.
-  late GlobalKey cursorKey =
-      GlobalKey(debugLabel: 'cursor_${widget.node.path}');
+  late GlobalKey cursorKey = GlobalKey(
+    debugLabel: 'cursor_${widget.node.path}',
+  );
 
   // keep the previous cursor rect to avoid unnecessary rebuild
   Rect? prevCursorRect;
@@ -79,10 +87,17 @@ class _BlockHighlightAreaState extends State<BlockHighlightArea> {
       builder: ((context, value, child) {
         final sizedBox = child ?? const SizedBox.shrink();
         final selection = value?.normalized;
-        if (selection == null) return sizedBox;
+
+        if (selection == null) {
+          log('selection is null');
+          return sizedBox;
+        }
 
         final path = widget.node.path;
-        if (!path.inSelection(selection)) return sizedBox;
+        if (!path.inSelection(selection)) {
+          return sizedBox;
+        }
+
         final editorState = context.read<EditorState>();
 
         if (editorState.selectionType == SelectionType.block) {
@@ -96,16 +111,13 @@ class _BlockHighlightAreaState extends State<BlockHighlightArea> {
           final padding = builder?.configuration.blockSelectionAreaMargin(
             widget.node,
           );
-
           return Positioned.fromRect(
-            rect: prevBlockRect ?? Rect.zero,
-            child: Padding(
-              padding: padding as EdgeInsetsGeometry,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: widget.blockColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+            rect: prevBlockRect!,
+            child: Container(
+              margin: padding,
+              decoration: BoxDecoration(
+                color: widget.blockColor,
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           );
@@ -116,8 +128,22 @@ class _BlockHighlightAreaState extends State<BlockHighlightArea> {
               prevCursorRect == null) {
             return sizedBox;
           }
+          final editorState = context.read<EditorState>();
+          final dragMode =
+              editorState.selectionExtraInfo?[selectionDragModeKey];
+          final shouldBlink = widget.delegate.shouldCursorBlink &&
+              dragMode != MobileSelectionDragMode.cursor;
 
-          return sizedBox;
+          final cursor = Cursor(
+            key: cursorKey,
+            rect: prevCursorRect!,
+            shouldBlink: shouldBlink,
+            cursorStyle: widget.delegate.cursorStyle,
+            color: widget.cursorColor,
+          );
+          // force to show the cursor
+          cursorKey.currentState?.unwrapOrNull<CursorState>()?.show();
+          return cursor;
         } else {
           // show the selection area when the selection is not collapsed
           if (!widget.supportTypes.contains(BlockSelectionType.selection) ||
@@ -130,7 +156,7 @@ class _BlockHighlightAreaState extends State<BlockHighlightArea> {
 
           return HighlightAreaPaint(
             rects: prevSelectionRects ?? <Rect>[],
-            highlightColor: widget.highlightColor.withOpacity(0.5),
+            highlightColor: widget.highlightColor,
           );
         }
       }),
@@ -221,7 +247,7 @@ class HighlightAreaPaint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _SelectionAreaPainter(
+      painter: _HighlightAreaPainter(
         rects: rects,
         selectionColor: highlightColor,
       ),
@@ -229,8 +255,8 @@ class HighlightAreaPaint extends StatelessWidget {
   }
 }
 
-class _SelectionAreaPainter extends CustomPainter {
-  const _SelectionAreaPainter({
+class _HighlightAreaPainter extends CustomPainter {
+  const _HighlightAreaPainter({
     required this.rects,
     required this.selectionColor,
   });
@@ -305,8 +331,8 @@ class _SelectionAreaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SelectionAreaPainter oldDelegate) {
-    return DeepCollectionEquality().equals(rects, oldDelegate.rects) &&
+  bool shouldRepaint(_HighlightAreaPainter oldDelegate) {
+    return DeepCollectionEquality().equals(rects, oldDelegate.rects) ||
         selectionColor != oldDelegate.selectionColor;
   }
 }

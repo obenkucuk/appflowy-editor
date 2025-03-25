@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
@@ -37,8 +38,11 @@ class _MobileEditorState extends State<MobileEditor> {
     );
 
     editorState.highlightNotifier.addListener(() {
-      Node;
       final highlight = editorState.highlightNotifier.value;
+
+      log('HIGHLIGHT: $highlight');
+      return;
+
       final visibleRange = editorScrollController.visibleRangeNotifier.value;
 
       log('VISIBLE RANGE: $visibleRange');
@@ -88,71 +92,101 @@ class _MobileEditorState extends State<MobileEditor> {
       // resizeToAvoidBottomInset: false,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          editorState.updateHighlight(
-            Selection(
-              start: Position(offset: 0, path: [13]),
-              end: Position(offset: 10, path: [15]),
-            ),
-          );
-        },
-      ),
-      body: MobileToolbarV2(
-        toolbarHeight: 48.0,
-        toolbarItems: [
-          textDecorationMobileToolbarItemV2,
-          buildTextAndBackgroundColorMobileToolbarItem(),
-          blocksMobileToolbarItem,
-          linkMobileToolbarItem,
-          dividerMobileToolbarItem,
-        ],
-        editorState: editorState,
-        child: MobileFloatingToolbar(
-          editorState: editorState,
-          editorScrollController: editorScrollController,
-          floatingToolbarHeight: 32,
-          toolbarBuilder: (context, anchor, closeToolbar) {
-            return AdaptiveTextSelectionToolbar.editable(
-              clipboardStatus: ClipboardStatus.pasteable,
-              onCopy: () {
-                copyCommand.execute(editorState);
-                closeToolbar();
-              },
-              onCut: () => cutCommand.execute(editorState),
-              onPaste: () => pasteCommand.execute(editorState),
-              onSelectAll: () => selectAllCommand.execute(editorState),
-              onLiveTextInput: null,
-              onLookUp: null,
-              onSearchWeb: null,
-              onShare: null,
-              anchors: TextSelectionToolbarAnchors(
-                primaryAnchor: anchor,
+          int start = 0;
+          int end = 3;
+
+          Timer.periodic(Duration(seconds: 1), (_) {
+            editorState.updateHighlight(
+              Selection(
+                start: Position(offset: start, path: [3]),
+                end: Position(offset: end, path: [3]),
               ),
             );
-          },
-          child: AppFlowyEditor(
-            autoFocus: true,
-            editable: false,
-
-            // disableSelectionService: true,
-            // disableKeyboardService: true,
-            // disableScrollService: false,
-            // showMagnifier: false,
-
-            editorStyle: editorStyle,
-            editorState: editorState,
-            editorScrollController: editorScrollController,
-            blockComponentBuilders: blockComponentBuilders,
-            // showcase 3: customize the header and footer.
-
-            autoScrollEdgeOffset: 8,
-            header: Padding(
-              padding: const EdgeInsets.only(bottom: 10.0),
-              child: Image.asset('assets/images/header.png'),
-            ),
-            footer: const SizedBox(height: 100),
-          ),
-        ),
+            start += 3;
+            end += 3;
+          });
+        },
       ),
+      body: AppFlowyEditor(
+        autoFocus: true,
+        editable: false,
+
+        // disableSelectionService: true,
+        // disableKeyboardService: true,
+        // disableScrollService: false,
+        // showMagnifier: false,
+
+        editorStyle: editorStyle,
+        editorState: editorState,
+        editorScrollController: editorScrollController,
+        blockComponentBuilders: blockComponentBuilders,
+        // showcase 3: customize the header and footer.
+
+        autoScrollEdgeOffset: 8,
+        header: Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: Image.asset('assets/images/header.png'),
+        ),
+        footer: const SizedBox(height: 100),
+      ),
+
+      // MobileToolbarV2(
+      //   toolbarHeight: 48.0,
+      //   toolbarItems: [
+      //     textDecorationMobileToolbarItemV2,
+      //     buildTextAndBackgroundColorMobileToolbarItem(),
+      //     blocksMobileToolbarItem,
+      //     linkMobileToolbarItem,
+      //     dividerMobileToolbarItem,
+      //   ],
+      //   editorState: editorState,
+      //   child: MobileFloatingToolbar(
+      //     editorState: editorState,
+      //     editorScrollController: editorScrollController,
+      //     floatingToolbarHeight: 32,
+      //     toolbarBuilder: (context, anchor, closeToolbar) {
+      //       return AdaptiveTextSelectionToolbar.editable(
+      //         clipboardStatus: ClipboardStatus.pasteable,
+      //         onCopy: () {
+      //           copyCommand.execute(editorState);
+      //           closeToolbar();
+      //         },
+      //         onCut: () => cutCommand.execute(editorState),
+      //         onPaste: () => pasteCommand.execute(editorState),
+      //         onSelectAll: () => selectAllCommand.execute(editorState),
+      //         onLiveTextInput: null,
+      //         onLookUp: null,
+      //         onSearchWeb: null,
+      //         onShare: null,
+      //         anchors: TextSelectionToolbarAnchors(
+      //           primaryAnchor: anchor,
+      //         ),
+      //       );
+      //     },
+      //     child: AppFlowyEditor(
+      //       autoFocus: true,
+      //       editable: false,
+
+      //       // disableSelectionService: true,
+      //       // disableKeyboardService: true,
+      //       // disableScrollService: false,
+      //       // showMagnifier: false,
+
+      //       editorStyle: editorStyle,
+      //       editorState: editorState,
+      //       editorScrollController: editorScrollController,
+      //       blockComponentBuilders: blockComponentBuilders,
+      //       // showcase 3: customize the header and footer.
+
+      //       autoScrollEdgeOffset: 8,
+      //       header: Padding(
+      //         padding: const EdgeInsets.only(bottom: 10.0),
+      //         child: Image.asset('assets/images/header.png'),
+      //       ),
+      //       footer: const SizedBox(height: 100),
+      //     ),
+      //   ),
+      // ),
     );
   }
 

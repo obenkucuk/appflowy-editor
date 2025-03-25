@@ -163,6 +163,7 @@ class EditorState {
   /// Sets the highlight of the editor.
   set highlight(Selection? value) {
     if (highlightNotifier.value == value) return;
+    // selectionNotifier.value = value;
 
     highlightNotifier.value = value;
   }
@@ -396,6 +397,7 @@ class EditorState {
     onDispose.dispose();
     document.dispose();
     selectionNotifier.dispose();
+    highlightNotifier.dispose();
     _subscription?.cancel();
     _onScrollViewScrolledListeners.clear();
   }
