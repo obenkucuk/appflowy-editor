@@ -101,6 +101,7 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         title: const Text('AppFlowy Editor'),
+        actions: [],
       ),
       body: SafeArea(
         maintainBottomViewPadding: true,

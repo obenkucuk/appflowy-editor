@@ -1,4 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:appflowy_editor/src/editor/block_component/base_component/selection/block_highlight_area.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -8,9 +9,11 @@ class BlockSelectionContainer extends StatelessWidget {
     required this.node,
     required this.delegate,
     required this.listenable,
+    required this.highlight,
     this.remoteSelection,
     this.cursorColor = Colors.black,
     this.selectionColor = Colors.blue,
+    this.highlightColor = Colors.blue,
     this.blockColor = Colors.blue,
     this.supportTypes = const [
       BlockSelectionType.cursor,
@@ -26,6 +29,9 @@ class BlockSelectionContainer extends StatelessWidget {
   // get the selection from the listenable
   final ValueListenable<Selection?> listenable;
 
+  // get the highlight from the editor state
+  final ValueListenable<Selection?> highlight;
+
   // remote selection
   final ValueListenable<List<RemoteSelection>>? remoteSelection;
 
@@ -34,6 +40,9 @@ class BlockSelectionContainer extends StatelessWidget {
 
   // the color of the selection
   final Color selectionColor;
+
+  // the color of the highlight
+  final Color highlightColor;
 
   // the color of the background of the block
   final Color blockColor;
@@ -58,11 +67,21 @@ class BlockSelectionContainer extends StatelessWidget {
       selectionColor: selectionColor,
       blockColor: blockColor,
       supportTypes: supportTypes
-          .where(
-            (element) => element != BlockSelectionType.cursor,
-          )
+          .where((element) => element != BlockSelectionType.cursor)
           .toList(),
     );
+
+    final blockHighlightArea = BlockHighlightArea(
+      node: node,
+      delegate: delegate,
+      listenable: highlight,
+      highlightColor: highlightColor,
+      blockColor: blockColor,
+      supportTypes: supportTypes
+          .where((element) => element != BlockSelectionType.cursor)
+          .toList(),
+    );
+
     return Stack(
       clipBehavior: Clip.none,
       // In RTL mode, if the alignment is topStart,
@@ -70,6 +89,7 @@ class BlockSelectionContainer extends StatelessWidget {
       alignment: Directionality.of(context) == TextDirection.ltr
           ? AlignmentDirectional.topStart
           : AlignmentDirectional.topEnd,
+
       children: [
         if (remoteSelection != null)
           RemoteBlockSelectionsArea(
@@ -84,9 +104,13 @@ class BlockSelectionContainer extends StatelessWidget {
           ),
         // block selection or selection area
         if (!selectionAboveBlock) blockSelectionArea,
+        blockHighlightArea,
+
         child,
+
         // block selection or selection area
         if (selectionAboveBlock) blockSelectionArea,
+
         // cursor
         // remote cursor
         if (supportTypes.contains(BlockSelectionType.cursor) &&

@@ -1,9 +1,4 @@
-import 'dart:developer';
-
-import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/base_component/selection/selection_area_painter.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
-import 'package:appflowy_editor/src/render/selection/cursor.dart';
+import 'package:appflowy_editor/appflowy_editor.dart' hide Path;
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,25 +6,16 @@ import 'package:provider/provider.dart';
 
 final _deepEqual = const DeepCollectionEquality().equals;
 
-enum BlockSelectionType {
-  cursor,
-  selection,
-  highlight,
-  block,
-}
-
-/// [BlockSelectionArea] is a widget that renders the selection area or the cursor of a block.
-class BlockSelectionArea extends StatefulWidget {
-  const BlockSelectionArea({
+/// [BlockHighlightArea] is a widget that renders the selection area or the cursor of a block.
+class BlockHighlightArea extends StatefulWidget {
+  const BlockHighlightArea({
     super.key,
     required this.node,
     required this.delegate,
     required this.listenable,
-    required this.cursorColor,
-    required this.selectionColor,
+    required this.highlightColor,
     required this.blockColor,
     this.supportTypes = const [
-      BlockSelectionType.cursor,
       BlockSelectionType.selection,
     ],
   });
@@ -41,10 +27,9 @@ class BlockSelectionArea extends StatefulWidget {
   final ValueListenable<Selection?> listenable;
 
   // the color of the cursor
-  final Color cursorColor;
 
   // the color of the selection
-  final Color selectionColor;
+  final Color highlightColor;
 
   final Color blockColor;
 
@@ -54,14 +39,13 @@ class BlockSelectionArea extends StatefulWidget {
   final List<BlockSelectionType> supportTypes;
 
   @override
-  State<BlockSelectionArea> createState() => _BlockSelectionAreaState();
+  State<BlockHighlightArea> createState() => _BlockHighlightAreaState();
 }
 
-class _BlockSelectionAreaState extends State<BlockSelectionArea> {
+class _BlockHighlightAreaState extends State<BlockHighlightArea> {
   // We need to keep the key to refresh the cursor status when typing continuously.
-  late GlobalKey cursorKey = GlobalKey(
-    debugLabel: 'cursor_${widget.node.path}',
-  );
+  late GlobalKey cursorKey =
+      GlobalKey(debugLabel: 'cursor_${widget.node.path}');
 
   // keep the previous cursor rect to avoid unnecessary rebuild
   Rect? prevCursorRect;
@@ -95,17 +79,10 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
       builder: ((context, value, child) {
         final sizedBox = child ?? const SizedBox.shrink();
         final selection = value?.normalized;
-
-        if (selection == null) {
-          log('selection is null');
-          return sizedBox;
-        }
+        if (selection == null) return sizedBox;
 
         final path = widget.node.path;
-        if (!path.inSelection(selection)) {
-          return sizedBox;
-        }
-
+        if (!path.inSelection(selection)) return sizedBox;
         final editorState = context.read<EditorState>();
 
         if (editorState.selectionType == SelectionType.block) {
@@ -119,13 +96,16 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
           final padding = builder?.configuration.blockSelectionAreaMargin(
             widget.node,
           );
+
           return Positioned.fromRect(
-            rect: prevBlockRect!,
-            child: Container(
-              margin: padding,
-              decoration: BoxDecoration(
-                color: widget.blockColor,
-                borderRadius: BorderRadius.circular(4),
+            rect: prevBlockRect ?? Rect.zero,
+            child: Padding(
+              padding: padding as EdgeInsetsGeometry,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: widget.blockColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
           );
@@ -136,22 +116,8 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
               prevCursorRect == null) {
             return sizedBox;
           }
-          final editorState = context.read<EditorState>();
-          final dragMode =
-              editorState.selectionExtraInfo?[selectionDragModeKey];
-          final shouldBlink = widget.delegate.shouldCursorBlink &&
-              dragMode != MobileSelectionDragMode.cursor;
 
-          final cursor = Cursor(
-            key: cursorKey,
-            rect: prevCursorRect!,
-            shouldBlink: shouldBlink,
-            cursorStyle: widget.delegate.cursorStyle,
-            color: widget.cursorColor,
-          );
-          // force to show the cursor
-          cursorKey.currentState?.unwrapOrNull<CursorState>()?.show();
-          return cursor;
+          return sizedBox;
         } else {
           // show the selection area when the selection is not collapsed
           if (!widget.supportTypes.contains(BlockSelectionType.selection) ||
@@ -162,9 +128,9 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
             return sizedBox;
           }
 
-          return SelectionAreaPaint(
+          return HighlightAreaPaint(
             rects: prevSelectionRects ?? <Rect>[],
-            selectionColor: widget.selectionColor,
+            highlightColor: widget.highlightColor.withOpacity(0.5),
           );
         }
       }),
@@ -241,3 +207,127 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     prevCursorRect = null;
   }
 }
+
+class HighlightAreaPaint extends StatelessWidget {
+  const HighlightAreaPaint({
+    super.key,
+    required this.rects,
+    required this.highlightColor,
+  });
+
+  final List<Rect> rects;
+  final Color highlightColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _SelectionAreaPainter(
+        rects: rects,
+        selectionColor: highlightColor,
+      ),
+    );
+  }
+}
+
+class _SelectionAreaPainter extends CustomPainter {
+  const _SelectionAreaPainter({
+    required this.rects,
+    required this.selectionColor,
+  });
+
+  final List<Rect> rects;
+  final Color selectionColor;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = selectionColor;
+    final path = Path();
+
+    // Satır satır grupla
+    final rowGroups = _groupByB(rects);
+    final rows = rowGroups.toList();
+
+    // Her satır için path'e ekle
+    for (int i = 0; i < rows.length; i++) {
+      final rowBoxes = rows[i];
+      if (rowBoxes.isEmpty) continue;
+
+      final firstBox = rowBoxes.first;
+      final lastBox = rowBoxes.last;
+
+      final previousRow = i > 0 ? rows[i - 1] : null;
+      final nextRow = i < rows.length - 1 ? rows[i + 1] : null;
+
+      // Köşe radiuslarını belirle
+      final topLeftRadius =
+          previousRow == null || firstBox.left < previousRow.first.left
+              ? 4.0
+              : 0.0;
+
+      final topRightRadius =
+          previousRow == null || lastBox.right > previousRow.last.right
+              ? 4.0
+              : 0.0;
+
+      final bottomLeftRadius =
+          nextRow == null || firstBox.left < nextRow.first.left ? 4.0 : 0.0;
+
+      final bottomRightRadius =
+          nextRow == null || lastBox.right > nextRow.last.right ? 4.0 : 0.0;
+
+      // Son satır için alt kısmına 4px ekle
+      final bottom = nextRow == null ? lastBox.bottom + 4 : lastBox.bottom;
+      final rect = Rect.fromLTRB(
+        firstBox.left - 4, // Expand left
+        firstBox.top - 4, // Expand top
+        lastBox.right + 4, // Expand right
+        bottom + 0, // Expand bottom
+      );
+
+      path.addRRect(
+        RRect.fromRectAndCorners(
+          rect,
+          topLeft:
+              topLeftRadius > 0 ? Radius.circular(topLeftRadius) : Radius.zero,
+          topRight: topRightRadius > 0
+              ? Radius.circular(topRightRadius)
+              : Radius.zero,
+          bottomLeft: bottomLeftRadius > 0
+              ? Radius.circular(bottomLeftRadius)
+              : Radius.zero,
+          bottomRight: bottomRightRadius > 0
+              ? Radius.circular(bottomRightRadius)
+              : Radius.zero,
+        ),
+      );
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_SelectionAreaPainter oldDelegate) {
+    return DeepCollectionEquality().equals(rects, oldDelegate.rects) &&
+        selectionColor != oldDelegate.selectionColor;
+  }
+}
+
+List<List<Rect>> _groupByB(List<Rect> boxes) {
+  Map<double, List<Rect>> grouped = {};
+
+  for (var box in boxes) {
+    grouped.putIfAbsent(box.bottom, () => []).add(box);
+  }
+
+  return grouped.values.toList();
+}
+
+/// How bigger the selection highlight box is than the natural selection box
+/// of the text in dip.
+///
+/// [TextSelectionPainter] paints the selection highlight box by using the result
+/// of [TextLayout.getBoxesForSelection] and expanding both the top and bottom of
+/// each box by this amount.
+///
+/// This can be used to align other widgets, like the drag handles, with the
+/// selection highlight box.
+const selectionHighlightBoxVerticalExpansion = 2.0;

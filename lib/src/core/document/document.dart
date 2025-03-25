@@ -77,6 +77,9 @@ class Document {
   /// First node of the document.
   Node? get first => root.children.firstOrNull;
 
+  /// All nodes of the document.
+  List<Node> get nodes => root.children;
+
   /// Last node of the document.
   Node? get last {
     Node? current = root.children.lastOrNull;

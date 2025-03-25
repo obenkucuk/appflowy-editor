@@ -75,6 +75,7 @@ class _EditorState extends State<Editor> {
 
   @override
   Widget build(BuildContext context) {
+    print('DENEME');
     return Stack(
       children: [
         ColoredBox(

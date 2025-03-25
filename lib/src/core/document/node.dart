@@ -73,9 +73,6 @@ final class Node extends ChangeNotifier with LinkedListEntry<Node> {
   /// In most cases, you don't need to modify it after the node is created.
   String id;
 
-  @Deprecated('Use type instead')
-  String get subtype => type;
-
   // @Deprecated('Use type instead')
   // String get id => type;
 
@@ -345,10 +342,6 @@ final class TextNode extends Node {
           type: 'text',
           attributes: attributes ?? {},
         );
-
-  @override
-  @Deprecated('Use type instead')
-  String get subtype => '';
 
   Delta _delta;
   @override

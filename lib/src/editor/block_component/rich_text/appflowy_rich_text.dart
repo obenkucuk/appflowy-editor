@@ -43,6 +43,7 @@ class AppFlowyRichText extends StatefulWidget {
     this.textAlign,
     this.cursorColor = const Color.fromARGB(255, 0, 0, 0),
     this.selectionColor = const Color.fromARGB(53, 111, 201, 231),
+    required this.highlightColor,
     this.autoCompleteTextProvider,
     required this.delegate,
     required this.node,
@@ -98,6 +99,7 @@ class AppFlowyRichText extends StatefulWidget {
 
   final Color cursorColor;
   final Color selectionColor;
+  final Color highlightColor;
 
   @override
   State<AppFlowyRichText> createState() => _AppFlowyRichTextState();
@@ -161,10 +163,12 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
     return BlockSelectionContainer(
       delegate: widget.delegate,
       listenable: widget.editorState.selectionNotifier,
+      highlight: widget.editorState.highlightNotifier,
       remoteSelection: widget.editorState.remoteSelections,
       node: widget.node,
       cursorColor: widget.cursorColor,
       selectionColor: widget.selectionColor,
+      highlightColor: widget.highlightColor,
       child: MouseRegion(
         cursor: SystemMouseCursors.text,
         child: child,
@@ -417,6 +421,8 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
       textSpan = widget.textSpanDecorator!(textSpan);
     }
     textSpan = adjustTextSpan(textSpan);
+
+    print('TEXT SPAN: $textSpan');
     return RichText(
       key: textKey,
       textAlign: widget.textAlign ?? TextAlign.start,

@@ -98,18 +98,10 @@ class EditorState {
   }
 
   @Deprecated('use EditorState.blank() instead')
-  EditorState.empty()
-      : this(
-          document: Document.blank(),
-        );
+  EditorState.empty() : this(document: Document.blank());
 
-  EditorState.blank({
-    bool withInitialText = true,
-  }) : this(
-          document: Document.blank(
-            withInitialText: withInitialText,
-          ),
-        );
+  EditorState.blank({bool withInitialText = true})
+      : this(document: Document.blank(withInitialText: withInitialText));
 
   final Document document;
 
@@ -141,8 +133,15 @@ class EditorState {
   final PropertyValueNotifier<Selection?> selectionNotifier =
       PropertyValueNotifier<Selection?>(null);
 
+  /// The highlight notifier of the editor.
+  final PropertyValueNotifier<Selection?> highlightNotifier =
+      PropertyValueNotifier<Selection?>(null);
+
   /// The selection of the editor.
   Selection? get selection => selectionNotifier.value;
+
+  /// The highlight of the editor.
+  Selection? get highlight => highlightNotifier.value;
 
   /// Remote selection is the selection from other users.
   final PropertyValueNotifier<List<RemoteSelection>> remoteSelections =
@@ -159,6 +158,13 @@ class EditorState {
     sliceUpcomingAttributes = true;
 
     selectionNotifier.value = value;
+  }
+
+  /// Sets the highlight of the editor.
+  set highlight(Selection? value) {
+    if (highlightNotifier.value == value) return;
+
+    highlightNotifier.value = value;
   }
 
   SelectionType? _selectionType;
@@ -342,6 +348,16 @@ class EditorState {
     this.selection = selection;
 
     return completer.future;
+  }
+
+  void updateHighlight(
+    Selection? highlight,
+  ) {
+    if (highlight == null || highlight == this.highlight) {
+      return;
+    }
+
+    this.highlight = highlight;
   }
 
   @Deprecated('use updateSelectionWithReason or editorState.selection instead')

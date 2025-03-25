@@ -64,13 +64,15 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
               children: [
                 if (header != null) header!,
                 ...items.map(
-                  (e) => Container(
+                  (e) => ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth:
                           editorState.editorStyle.maxWidth ?? double.infinity,
                     ),
-                    padding: editorState.editorStyle.padding,
-                    child: editorState.renderer.build(context, e),
+                    child: Padding(
+                      padding: editorState.editorStyle.padding,
+                      child: editorState.renderer.build(context, e),
+                    ),
                   ),
                 ),
                 if (footer != null) footer!,
@@ -103,14 +105,16 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
           }
 
           return Center(
-            child: Container(
+            child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: editorState.editorStyle.maxWidth ?? double.infinity,
               ),
-              padding: editorState.editorStyle.padding,
-              child: editorState.renderer.build(
-                context,
-                items[index - (header != null ? 1 : 0)],
+              child: Padding(
+                padding: editorState.editorStyle.padding,
+                child: editorState.renderer.build(
+                  context,
+                  items[index - (header != null ? 1 : 0)],
+                ),
               ),
             ),
           );
