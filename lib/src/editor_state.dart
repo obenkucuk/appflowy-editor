@@ -163,7 +163,6 @@ class EditorState {
   /// Sets the highlight of the editor.
   set highlight(Selection? value) {
     if (highlightNotifier.value == value) return;
-    // selectionNotifier.value = value;
 
     highlightNotifier.value = value;
   }
