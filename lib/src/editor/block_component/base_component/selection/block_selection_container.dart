@@ -33,9 +33,6 @@ class BlockSelectionContainer extends StatelessWidget {
   // get the highlight from the editor state
   final ValueListenable<Selection?> highlight;
 
-  // get the highlight from the editor state
-  final ValueListenable<Selection?> highlight;
-
   // remote selection
   final ValueListenable<List<RemoteSelection>>? remoteSelection;
 
@@ -44,9 +41,6 @@ class BlockSelectionContainer extends StatelessWidget {
 
   // the color of the selection
   final Color selectionColor;
-
-  // the color of the highlight
-  final Color highlightColor;
 
   // the color of the highlight
   final Color highlightColor;
